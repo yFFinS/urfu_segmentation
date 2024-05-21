@@ -23,7 +23,7 @@ num_classes = 5
 crop_size = (128, 128)
 
 # Количичество эпох для обучения
-max_epochs = 10
+max_epochs = 6
 
 # Функция потерь
 loss = 'CrossEntropyLoss'
@@ -173,7 +173,7 @@ tta_pipeline = [  # Test Time Augmentation (TTA)
 ]
 # ----------------------------------------------------------------
 # Tensorboard visualization
-vis_backends = [dict(type='LocalVisBackend'),  # save_dir=f'{work_dir}/{experiment_name}'),
-                dict(type='TensorboardVisBackend')]  #, save_dir=f'{work_dir}/{experiment_name}')]
+vis_backends = [dict(type='LocalVisBackend', scalar_save_file='../../scalars.json'),
+                dict(type='TensorboardVisBackend', save_dir=work_dir)]
 visualizer = dict(type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 # ----------------------------------------------------------------
