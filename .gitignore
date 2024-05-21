@@ -108,6 +108,7 @@ venv.bak/
 data
 .vscode
 .idea
+urfu_project/logs
 
 # custom
 *.pkl
