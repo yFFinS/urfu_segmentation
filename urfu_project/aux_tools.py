@@ -4,7 +4,13 @@ from PIL import Image
 from tqdm import tqdm
 
 
-def add_palette_for_1ch_img(path, palette, pic_suffix='.tif'):
+def add_palette_for_1ch_img(path,
+                            palette=((0, 0, 0),  # 0
+                                     (64, 64, 64),  # 1
+                                     (128, 128, 128),  # 2
+                                     (192, 192, 192),  # 3
+                                     (255, 255, 255)),  # 4
+                            pic_suffix='.tif'):
     '''
     !!! Функция предназначена для подготовки масок снимков к обучению с помощью MMSegmentation.
     Функция для создания палтиры у изображения с последующей перезаписью изображения в формате PNG. 
@@ -27,7 +33,12 @@ def add_palette_for_1ch_img(path, palette, pic_suffix='.tif'):
         im.save(img.path.rstrip(pic_suffix) + '.png')
 
 
-def create_splits(dataset_path, splits_dir_name, imgs_dir_name, pic_count=None, train_size=0.7, pic_suffix=''):
+def create_splits(dataset_path,
+                  splits_dir_name,
+                  imgs_dir_name,
+                  pic_count=None,
+                  train_size=0.7,
+                  pic_suffix=''):
     '''
     !!! В директории с изображениями не должно быть иных файлов. Возможно добавление в train val чего-то лишнего. 
     Функция для создания папки splits с случайным выбором изображений из общей папки imgs_dir_name, 

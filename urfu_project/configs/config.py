@@ -43,7 +43,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
 experiment_name = f'{dataset_type}_{crop_size[0]}_{loss}_{optimizer["type"]}_bsize_{batch_size}'
 logs_dir = 'logs'
 work_dir = f'{logs_dir}/{experiment_name}'  # директория для сохранения логов
-log_interval = 10  # интервал для печати логов
+log_interval = 10  # интервал в итерациях для печати логов
 
 # Директория, где хрянятся файлы с списком изображений train и val
 splits = 'splits'
