@@ -1,3 +1,5 @@
+# для выбора модели, расписания необходимо наследовать один из файлов из репозитория mmsegmentation
+# базовые файлы для наследования можно посмотреть по пути mmsegmentation/configs/_base_/
 _base_ = [
     '../../configs/_base_/models/deeplabv3plus_r50-d8.py',
     '../../configs/_base_/default_runtime.py',
@@ -43,7 +45,7 @@ logs_dir = 'logs'
 work_dir = f'{logs_dir}/{experiment_name}'  # директория для сохранения логов
 log_interval = 10  # интервал для печати логов
 
-# Splits directory
+# Директория, где хрянятся файлы с списком изображений train и val
 splits = 'debug_split'
 
 # Имя эксперимента
@@ -52,11 +54,12 @@ splits = 'debug_split'
 data_preprocessor = dict(size=crop_size)
 model = dict(
     data_preprocessor=data_preprocessor,
-    pretrained='open-mmlab://resnet18_v1c',  # https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json
+    pretrained='open-mmlab://resnet18_v1c',  # ссылка для загрузки предобученного совместимого энкодера
+    # параметры энкодера
     backbone=dict(
-        depth=18,
+        depth=18, # глубина
         norm_cfg=norm_cfg
-    ),                 # https://mmdetection.readthedocs.io/en/latest/model_zoo.html
+    ),
     decode_head=dict(
         num_classes=num_classes,
         loss_decode=dict(type=loss),
@@ -100,14 +103,16 @@ default_hooks = dict(logger=dict(type='LoggerHook', log_metric_by_epoch=True, in
 train_pipeline = [
     dict(type='LoadImageFromFile'),  # загружаем изображения
     dict(type='LoadAnnotations'),  # загружаем аннотации
+    # здесь задаются аугментации
     dict(
-        type='RandomResize',  # задаем аугментации изображений
+        type='RandomResize',  
         scale=crop_size,
         ratio_range=(0.5, 2.0),
         keep_ratio=True),
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
+    # конец аугментаций
     dict(type='PackSegInputs')
 ]
 
@@ -147,7 +152,7 @@ val_dataloader = dict(
             img_path='images',
             seg_map_path='gt'),
         pipeline=test_pipeline,
-        ann_file=f'{splits}/train.txt')
+        ann_file=f'{splits}/val.txt')
     )
 
 test_dataloader = val_dataloader
