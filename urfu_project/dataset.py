@@ -19,4 +19,4 @@ class Dataset(BaseSegDataset):
     )
 
     def __init__(self, **kwargs):
-        super().__init__(img_suffix=".tif", seg_map_suffix=".tif", **kwargs)
+        super().__init__(img_suffix=".tif", seg_map_suffix=".png", **kwargs)
