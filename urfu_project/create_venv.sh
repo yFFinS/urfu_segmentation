@@ -1,10 +1,23 @@
 #!/bin/bash
-python3 -m venv .venv # create venv
-source ./.venv/bin/activate # activate venv
-pip3 install torch torchvision # torch
-pip install -U openmim # install mim for install some mm libs
-mim install mmengine # mmengine from mim
-mim install "mmcv>=2.0.0" # mmcv from mim
-pip install -e ../ # install mmseg
-pip install ftfy regex # some libs to start train
-pip install future tensorboard # tensorboard
+# Create a conda environment and activate it.
+conda create --name openmmlab python=3.8 -y
+conda activate openmmlab
+
+# Install PyTorch
+conda install pytorch torchvision -c pytorch
+
+# Install MMCV using MIM
+pip install -U openmim
+mim install mmengine
+mim install "mmcv>=2.0.0"
+
+# Install MMSegmentation
+cd mmsegmentation
+pip install -v -e .
+
+# Install some libs to start training
+pip install ftfy regex
+
+# Install TensorBoard for visualization
+pip install tensorboardX
+pip install future tensorboard
