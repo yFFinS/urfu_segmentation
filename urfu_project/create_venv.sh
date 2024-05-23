@@ -4,7 +4,7 @@ conda create --name openmmlab python=3.8 -y
 conda activate openmmlab
 
 # Install PyTorch
-conda install pytorch torchvision -c pytorch
+pip install torch==1.11.0+cu115 torchvision==0.12.0+cu115 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install MMCV using MIM
 pip install -U openmim
