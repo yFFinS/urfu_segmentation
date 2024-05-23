@@ -89,6 +89,16 @@ def main():
     # resume training
     cfg.resume = args.resume
 
+    # Средние значения
+    with open(f'{cfg.data_root}/mean_vals.txt', 'r') as file:
+        lines = file.readlines()
+
+    mean = [float(x) for x in lines[0].strip().split()]
+    std = [float(x) for x in lines[1].strip().split()]
+
+    cfg.model.data_preprocessor.mean = mean
+    cfg.model.data_preprocessor.std = std
+
     # build the runner from config
     if 'runner_type' not in cfg:
         # build the default runner
