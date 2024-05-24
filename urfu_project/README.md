@@ -184,7 +184,7 @@ model = dict(
 Например, меняем оптимизатор на Adam:
 
 ```python
-optimizer = dict(type='Adam', lr=0.001, weight_decay=0.0005)
+optimizer = dict(_delete_=True, type='Adam', lr=0.001, weight_decay=0.0005)
 ```
 
 ## Изменение параметров логирования
