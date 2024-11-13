@@ -17,6 +17,8 @@ tensorboard = "^2.18.0"
 tensorboardx = "^2.6.2.2"
 tqdm = "^4.66.5"
 mmpretrain = ">=1.0.0rc7"
+albumentations = "^1.4.21"
+pandas = "^2.2.3"
 
 [[tool.poetry.source]]
 name = "pytorch-gpu"

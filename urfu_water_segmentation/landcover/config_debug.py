@@ -111,8 +111,9 @@ train_pipeline = [
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
+    dict(type='LABShiftTransform'),
     # конец аугментаций
-    dict(type='PackSegInputs')
+    dict(type='PackSegInputs'),
 ]
 
 test_pipeline = [
@@ -121,7 +122,7 @@ test_pipeline = [
     # добавьте загрузочную аннотацию после `Resize`, 
     # потому что val не нуждается в преобразовании данных с изменением размера
     dict(type='LoadAnnotations'),
-    dict(type='PackSegInputs')
+    dict(type='PackSegInputs'),
 ]
 
 train_dataloader = dict(

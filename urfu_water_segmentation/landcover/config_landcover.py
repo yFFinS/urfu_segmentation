@@ -142,7 +142,7 @@ train_cfg = dict(max_epochs=max_epochs, type='EpochBasedTrainLoop', val_interval
 # В default_hooks draw=False для того, чтобы не выводить изображения из val с результатами модели после эпохи в логи
 # Если поставить True, то увеличьте интервал до более высокого, чтоб не сохранял часто много изображений
 default_hooks = dict(logger=dict(type='LoggerHook', log_metric_by_epoch=True, interval=log_interval),
-                     checkpoint=dict(type='CheckpointHook', by_epoch=True, interval=1, max_keep_ckpts=5),
+                     checkpoint=dict(type='CheckpointHook', by_epoch=True, interval=1, max_keep_ckpts=1, save_best='mIoU'),
                      visualization=dict(type='SegVisualizationHook', draw=False, interval=500))
 # ----------------------------------------------------------------
 
@@ -201,7 +201,7 @@ test_evaluator = val_evaluator
 # ]
 # ----------------------------------------------------------------
 # Tensorboard visualization
-vis_backends = [dict(type='LocalVisBackend', scalar_save_file='../../scalars.json'),
+vis_backends = [dict(type='LocalVisBackend', scalar_save_file='../../scalars.json', save_dir=work_dir),
                 dict(type='TensorboardVisBackend', save_dir=work_dir)]
 visualizer = dict(type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 # ----------------------------------------------------------------
