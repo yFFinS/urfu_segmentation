@@ -21,6 +21,12 @@ rg3_path = Path('/misc/home1/m_imm_freedata/Segmentation/RG3/train_and_val')
 
 batch_size = 32
 
+# Для каждого датасета будет посчитаны свои метрики
+# Для датасетов нужно указать
+# - name - название датасета
+# - images - папка с изображениями из датасета, будут использованы все 
+# - gt - папка с разметкой из датасета
+# ! Порядок изображений в images и в gt должен совпадать, а так же ожидается, что все изображения формата .tif
 datasets = [
     {'name': 'landcover', 'images': landcover_path / 'val' / 'images', 'gt': landcover_path / 'val' / 'gt'},
     {'name': 'glh_water', 'images': glh_water_path / 'val' / 'images', 'gt': glh_water_path / 'val' / 'gt'},

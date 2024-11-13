@@ -2,10 +2,11 @@
 
 source .venv/bin/activate
 
-# Select best node params
-NODE_PARAMS="-p apollo -t 20:00:00"  # might not finish in time
+# Для запуска на CPU, за 2 часа успевает
+NODE_PARAMS="-p apollo -t 06:00:00"
 DEVICE="cpu"
 
+# Для запуска на GPU, успевает за 10-15 минут
 # NODE_PARAMS="-p hiperf --gres=gpu:a100:1 --nodelist=tesla-a101 -t 03:00:00"
 # NODE_PARAMS="-p hiperf --gres=gpu:v100:1 --nodelist=tesla-v100 -t 03:00:00"
 # DEVICE="cuda"
