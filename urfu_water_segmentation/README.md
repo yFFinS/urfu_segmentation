@@ -41,3 +41,39 @@ sh evaluate.sh
 > В `evaluate.sh` настраиваются параметры запуска батч джобы, а так же папка с экспериментом, откуда будет взят конфиг модели и последний чекпоинт.
 
 > В `evaluate.py` можно изменить список датасетов, на которых будет проходить валидация.
+
+# Хард аугментации 
+Чтобы запустить обучение с хард аугментациями надо 
+1) в configе в train_pipeline их добавить, вот пример как это можно сделать
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', reduce_zero_label=False),
+    dict(
+        type='RandomResize',
+        scale=(2048, 512),
+        ratio_range=(0.5, 2.0),
+        keep_ratio=True
+    ),
+    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    dict(
+        type='Resize',
+        scale=(512, 512),
+        keep_ratio=False  # Force exact 512×512 resizing
+    ),
+    dict(type='RandomFlip', prob=0.5),
+    dict(
+        type='HardAugmentationsTransform',
+        tile_size=crop_size[0],
+        cloud_shadows_dir=clouds_shadows_path,
+        for_3ch_img=True,
+        mask_dropout=True,
+        make_blue=True
+    ),
+    dict(type='PackSegInputs')
+]
+
+2) установить в .venv albumentations
+```sh
+source .venv/bin/activate
+pip install albumentations
+```

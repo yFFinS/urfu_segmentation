@@ -2535,3 +2535,258 @@ class RandomDepthMix(BaseTransform):
 
         results['img'] = img
         return results
+
+
+from albumentations.core.transforms_interface import ImageOnlyTransform
+import albumentations as A
+
+class LABShift(ImageOnlyTransform):
+    """Randomly change L, A, B channels of the LAB color space of the input image."""
+
+    def __init__(
+            self,
+            l_shift_limit: int = 20,
+            a_shift_limit: int = 20,
+            b_shift_limit: int = 20,
+            always_apply: bool = False,
+            p: float = 0.5,
+    ):
+        super(LABShift, self).__init__(p, always_apply)
+        self.l_shift_limit = (-l_shift_limit, 0)
+        self.a_shift_limit = (-a_shift_limit, a_shift_limit)
+        self.b_shift_limit = (-b_shift_limit, 0)
+
+    def apply(self, img, l_shift=0, a_shift=0, b_shift=0, **params):
+        # Convert image to LAB color space
+        lab_image = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab_image)
+
+        # Apply shifts
+        l = cv2.add(l, l_shift)
+        a = cv2.add(a, a_shift)
+        b = cv2.add(b, b_shift)
+
+        # Merge channels back and convert to BGR
+        lab_image = cv2.merge((l, a, b))
+        img = cv2.cvtColor(lab_image, cv2.COLOR_LAB2BGR)
+        return img
+
+    def get_params(self):
+        return {
+            "l_shift": random.uniform(self.l_shift_limit[0], self.l_shift_limit[1]),
+            "a_shift": random.uniform(self.a_shift_limit[0], self.a_shift_limit[1]),
+            "b_shift": random.uniform(self.b_shift_limit[0], self.b_shift_limit[1]),
+        }
+
+    def get_transform_init_args_names(self):
+        return "l_shift_limit", "a_shift_limit", "b_shift_limit"
+
+
+@TRANSFORMS.register_module()
+class LABShiftTransform(BaseTransform):
+    """Wraps the LABShift Albumentations transform for use in mmsegmentation."""
+
+    def __init__(
+            self,
+            l_shift_limit: int = 20,
+            a_shift_limit: int = 20,
+            b_shift_limit: int = 20,
+            always_apply: bool = False,
+            p: float = 0.5
+    ):
+        super().__init__()
+        self.albu_transform = A.Compose([
+            LABShift(
+                l_shift_limit=l_shift_limit,
+                a_shift_limit=a_shift_limit,
+                b_shift_limit=b_shift_limit,
+                always_apply=always_apply,
+                p=p
+            )
+        ])
+
+    def transform(self, results):
+        """Apply the transformation to the image in results.
+
+        Args:
+            results (dict): A dictionary containing the data and metadata.
+
+        Returns:
+            dict: The updated dictionary with the transformed image.
+        """
+        image = results['img']
+        augmented = self.albu_transform(image=image)
+        results['img'] = augmented['image']
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f"(albu_transform={self.albu_transform})"
+        return repr_str
+
+
+from glob import glob
+import os
+
+class CloudShadowOverlay(ImageOnlyTransform):
+    def __init__(self, cloud_shadows_dir, tile_size=512, shadow_opacity_range=(0.4, 0.77), shadow_color=(55, 31, 1),
+                 kernel_size=61, always_apply=False, p=1.0):
+        super().__init__(always_apply=always_apply, p=p)
+        self.images_list = []
+        file_exts = ('*.tif', '*.png', '*.jpg')
+        for ext in file_exts:
+            self.images_list.extend(glob(os.path.join(cloud_shadows_dir, ext)))
+        
+        self.tile_size = int(tile_size)
+        self.shadow_opacity_range = shadow_opacity_range
+        self.shadow_color = np.asarray(shadow_color, dtype=np.float32)
+        assert self.shadow_color.size == 3, "Please provide shadow_color=(R, G, B)"
+        self.kernel_size = kernel_size if kernel_size % 2 == 1 else kernel_size + 1  # Ensure odd kernel size
+
+    def apply(self, image, **params):
+        # Use the actual dimensions of the input image
+        #height, width = image.shape[:2]
+        idx = random.randint(len(self.images_list))
+        cloud_shadow = cv2.imread(self.images_list[idx], cv2.IMREAD_GRAYSCALE)
+        assert cloud_shadow is not None, f"Could not load cloud shadow image {self.images_list[idx]}"
+
+        # Define transformations using the input image dimensions
+        cloud_shadow_transform = A.Compose([
+            A.Resize(height=self.tile_size, width=self.tile_size, interpolation=cv2.INTER_AREA),
+            A.ShiftScaleRotate(scale_limit=0.2, shift_limit=0.5, border_mode=cv2.BORDER_CONSTANT, value=0, p=0.5),
+            A.CenterCrop(height=self.tile_size, width=self.tile_size, p=1.0)
+        ])
+
+        # Apply transformations to the cloud shadow mask
+        transformed = cloud_shadow_transform(image=cloud_shadow)
+        cloud_shadow = np.float32(transformed['image'])
+
+        # Apply Gaussian blur and normalize
+        mask = cv2.GaussianBlur(cloud_shadow, (self.kernel_size, self.kernel_size), 0)
+        mask = cv2.normalize(mask, mask, 0, 1.0, cv2.NORM_MINMAX)
+
+        # Apply shadow opacity
+        a, b = self.shadow_opacity_range
+        shadow_opacity = random.uniform(a, b)
+        alpha = mask * shadow_opacity
+
+        # Apply shadow to the image
+        result_image = image.copy()
+        for c in range(3):
+            result_image[:, :, c] = (1 - alpha) * result_image[:, :, c] + alpha * self.shadow_color[c]
+
+        return result_image
+
+@TRANSFORMS.register_module()
+class CloudShadowOverlayTransform(BaseTransform):
+    def __init__(self, cloud_shadows_dir, tile_size=512, shadow_opacity_range=(0.4, 0.77), shadow_color=(55, 31, 1),
+                 kernel_size=61, always_apply=False, p=1.0):
+        super().__init__()
+        self.albu_transform = A.Compose([
+            CloudShadowOverlay(
+                cloud_shadows_dir=cloud_shadows_dir,
+                tile_size=tile_size,
+                shadow_opacity_range=shadow_opacity_range,
+                shadow_color=shadow_color,
+                kernel_size=kernel_size,
+                always_apply=always_apply,
+                p=p
+            )
+        ])
+
+    def transform(self, results):
+        image = results['img']
+        augmented = self.albu_transform(image=image)
+        results['img'] = augmented['image']
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f"(albu_transform={self.albu_transform})"
+        return repr_str
+
+@TRANSFORMS.register_module()
+class HardAugmentationsTransform(BaseTransform):
+    def __init__(self, tile_size, cloud_shadows_dir, for_3ch_img=True, mask_dropout=True, make_blue=True):
+        super().__init__()
+        self.tile_size = tile_size
+        self.for_3ch_img = for_3ch_img
+        self.mask_dropout = mask_dropout
+        self.make_blue = make_blue
+        self.cloud_shadows_dir = cloud_shadows_dir
+
+        # Build the list of augmentations
+        albu_transforms = [
+            # D4 Augmentations
+            A.RandomRotate90(p=1),
+            A.Transpose(p=0.5),
+            # Spatial augmentations
+            A.OneOf([
+                A.ShiftScaleRotate(scale_limit=0.2, rotate_limit=45, border_mode=cv2.BORDER_REFLECT101),
+                A.ElasticTransform(border_mode=cv2.BORDER_REFLECT101, alpha_affine=5),
+            ]),
+            # Color augmentations
+            (A.OneOrOther(
+                p=0.7 if self.make_blue else 0.2,
+                first=A.Compose([
+                    LABShift(
+                        l_shift_limit=40 if self.make_blue else 5,
+                        a_shift_limit=5,
+                        b_shift_limit=30 if self.make_blue else 5,
+                        p=1.0
+                    )
+                ]),
+                second=A.Compose([
+                    A.OneOf([
+                        A.RandomBrightnessContrast(brightness_by_max=True),
+                        A.CLAHE(),
+                        A.FancyPCA(),
+                        A.HueSaturationValue(),
+                        A.RGBShift(),
+                        A.RandomGamma(),
+                    ])
+                ])
+            ) if self.for_3ch_img else A.OneOf([
+                A.RandomBrightnessContrast(brightness_by_max=True),
+                A.RandomGamma(),
+            ])),
+            # Dropout & Shuffle
+            A.OneOf([
+                A.RandomGridShuffle(),
+                A.CoarseDropout(),
+            ]),
+            # Cloud Shadow Overlay
+            CloudShadowOverlay(
+                cloud_shadows_dir=self.cloud_shadows_dir,
+                tile_size=self.tile_size,
+                p=0.3
+            ) if self.for_3ch_img else A.NoOp(),
+            # Add occasional blur or noise
+            A.OneOf([A.GaussianBlur(), A.GaussNoise()]),
+            # Weather effects
+            A.RandomFog(fog_coef_lower=0.01, fog_coef_upper=0.3, p=0.1) if self.for_3ch_img else A.NoOp(),
+        ]
+
+        self.albu_transform = A.Compose(albu_transforms)
+
+    def transform(self, results):
+        image = results['img']
+        if 'gt_semantic_seg' in results:
+            mask = results['gt_semantic_seg']
+            augmented = self.albu_transform(image=image, mask=mask)
+            results['img'] = augmented['image']
+            results['gt_semantic_seg'] = augmented['mask']
+        else:
+            augmented = self.albu_transform(image=image)
+            results['img'] = augmented['image']
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += (f"(tile_size={self.tile_size}, "
+                     f"cloud_shadows_dir='{self.cloud_shadows_dir}', "
+                     f"for_3ch_img={self.for_3ch_img}, "
+                     f"mask_dropout={self.mask_dropout}, "
+                     f"make_blue={self.make_blue}, "
+                     f"albu_transform={self.albu_transform})")
+        return repr_str
