@@ -18,4 +18,8 @@ sbatch -n1 \
     --mem=45000 \
     $NODE_PARAMS \
     --job-name="mmsegm-water-eval" \
-    --wrap="python ./evaluate.py --output-path=./eval_\${SLURM_JOB_ID}.csv --experiment-path=$EXPERIMENT_PATH --device=$DEVICE"
+    --wrap="python ./evaluate.py \
+            --output-path=./eval_\${SLURM_JOB_ID} \
+            --visualize \
+            --experiment-path=$EXPERIMENT_PATH \
+            --device=$DEVICE"

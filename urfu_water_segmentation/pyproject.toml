@@ -19,6 +19,7 @@ tqdm = "^4.66.5"
 mmpretrain = ">=1.0.0rc7"
 albumentations = "^1.4.21"
 pandas = "^2.2.3"
+pillow = "<10"
 
 [[tool.poetry.source]]
 name = "pytorch-gpu"
